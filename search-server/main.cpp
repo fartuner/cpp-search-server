@@ -9,6 +9,11 @@
 using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
+// Новая структура 
+struct QueryWords {
+    set<string> plus_words;
+    set<string> minus_words;
+};
 // Определение структуры Document
 struct Document {
     int id;
@@ -38,8 +43,8 @@ vector<string> SplitIntoWords(const string& text) {
             word += c;
         }
     }
-    if (!word.empty())
-        words.push_back(word);
+    if (!word.empty()){
+        words.push_back(word);}
     return words;
 }
 class SearchServer {
@@ -52,19 +57,17 @@ public:
         const vector<string> words = SplitIntoWordsNoStop(document);
         document_count_++;
         // TF
-        map<string, int> tf_map;
-        for (const string &word : words)
-            tf_map[word]++;
-        for (const auto &[word, count] : tf_map) {
-            index[word][document_id] = static_cast<double>(count) / words.size();
-        }
+    double weight = 1.0 / words.size();
+    for (const string &word : words) {
+        index[word][document_id] += weight;
+    }
     }
     vector<Document> FindTopDocuments(const string& raw_query) const {
-        pair<set<string>, set<string>> query_words = ParseQuery(raw_query);
-        auto matched_documents = FindAllDocuments(query_words.first, query_words.second);
+        QueryWords query_words = ParseQuery(raw_query);
+        auto matched_documents = FindAllDocuments(query_words.plus_words, query_words.minus_words);
         // IDF
         map<string, double> idf_map;
-        for (const string &word : query_words.first) {
+        for (const string &word : query_words.plus_words) {
             if (index.count(word) > 0) {
                 idf_map[word] = log(static_cast<double>(document_count_) / index.at(word).size());
             }
@@ -72,12 +75,12 @@ public:
         //TF-IDF
         for (auto &doc : matched_documents) {
             double relevance = 0.0;
-            for (const string &word : query_words.first) {
+            for (const string &word : query_words.plus_words) {
                 if (index.count(word) > 0 && index.at(word).count(doc.id) > 0) {
-                    relevance += index.at(word).at(doc.id) * idf_map.at(word);
+                   relevance += index.at(word).at(doc.id) * idf_map.at(word);
                 }
             }
-            doc.relevance = relevance;
+           doc.relevance = relevance;
         } 
         // Сортировка по убыванию релевантности
         sort(matched_documents.begin(), matched_documents.end(),
@@ -104,17 +107,17 @@ private:
         }
         return words;
     }
-    pair<set<string>, set<string>> ParseQuery(const string &text) const {
-        set<string> plus_words;
-        set<string> minus_words;
+    QueryWords ParseQuery(const string &text) const {
+        QueryWords query_words;
 
         for (const string& word : SplitIntoWords(text)) {
             if (word[0] == '-')
-                minus_words.insert(word.substr(1));
+                query_words.minus_words.insert(word.substr(1));
             else
-                plus_words.insert(word);
+                query_words.plus_words.insert(word);
         }
-        return make_pair(plus_words, minus_words);
+
+        return query_words;
     }
     vector<Document> FindAllDocuments(const set<string>& plus_words,
                                       const set<string>& minus_words) const {
