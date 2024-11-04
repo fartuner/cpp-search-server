@@ -9,7 +9,7 @@
 using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
-// Новая структура 
+// Новая структурa 
 struct QueryWords {
     set<string> plus_words;
     set<string> minus_words;
