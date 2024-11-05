@@ -57,8 +57,8 @@ public:
         const vector<string> words = SplitIntoWordsNoStop(document);
         document_count_++;
         // TF
-    double weight = 1.0 / words.size();
-    for (const string &word : words) {
+        double weight = 1.0 / words.size();
+        for (const string &word : words) {
         index[word][document_id] += weight;
     }
     }
@@ -73,7 +73,7 @@ public:
             }
         }
         //TF-IDF
-        for (auto &doc : matched_documents) {
+        for (auto &doc : matched_documents) {//нельзя сюда добавить const 
             double relevance = 0.0;
             for (const string &word : query_words.plus_words) {
                 if (index.count(word) > 0 && index.at(word).count(doc.id) > 0) {
@@ -126,7 +126,7 @@ private:
         for (const string& word : plus_words) {
             if (index.find(word) != index.end()) {
                 for (const auto &[doc_id, tf_value] : index.at(word)) {
-                    doc_relevance[doc_id] += tf_value;
+                    doc_relevance[doc_id] += tf_value; //строка IDF 80
                 }
             }
         }
