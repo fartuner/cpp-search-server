@@ -4,6 +4,7 @@
 #include "string_processing.h"
 
 #include <algorithm>
+#include <iostream>
 #include <map>
 #include <set>
 #include <stdexcept>
@@ -11,9 +12,10 @@
 #include <vector>
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
+constexpr double COMPARISON_THRESHOLD = 1e-6;
 
 class SearchServer {
-public: 
+public:
     template <typename StringContainer>
     explicit SearchServer(const StringContainer& stop_words);
     explicit SearchServer(const std::string& stop_words_text);
@@ -71,10 +73,8 @@ SearchServer::SearchServer(const StringContainer& stop_words)
     : stop_words_(MakeUniqueNonEmptyStrings(stop_words))  // Extract non-empty stop words
 {
     if (!all_of(stop_words_.begin(), stop_words_.end(), IsValidWord)) {
-    	// здесь для использования литерала s нам нужен namespace std
-    	// мы можем использовать его здесь, так как он будет ограничен контекстом этого блока
-    	using namespace std;
-        throw std::invalid_argument("Some of stop words are invalid"s);
+        using namespace std;
+        throw invalid_argument("Some of stop words are invalid");
     }
 }
 
@@ -84,8 +84,8 @@ std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_quer
 
     auto matched_documents = FindAllDocuments(query, document_predicate);
 
-    sort(matched_documents.begin(), matched_documents.end(), [](const Document& lhs, const Document& rhs) {
-        if (std::abs(lhs.relevance - rhs.relevance) < 1e-6) {
+    std::sort(matched_documents.begin(), matched_documents.end(), [](const Document& lhs, const Document& rhs) {
+        if (std::abs(lhs.relevance - rhs.relevance) < COMPARISON_THRESHOLD) {
             return lhs.rating > rhs.rating;
         } else {
             return lhs.relevance > rhs.relevance;
@@ -129,3 +129,5 @@ std::vector<Document> SearchServer::FindAllDocuments(const Query& query, Documen
     }
     return matched_documents;
 }
+
+#endif // SEARCHSERVER_H
